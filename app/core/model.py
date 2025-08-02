@@ -10,7 +10,7 @@ class TeachableModel:
         self.class_names = []
         self.loaded = False
         
-    def load_model(self, model_path="keras_Model.h5", labels_path="labels.txt"):
+    def load_model(self, model_path, labels_path):
         """โหลดโมเดลและป้ายกำกับ"""
         # คลาสแก้ไขปัญหา DepthwiseConv2D
         class FixedDepthwiseConv2D(DepthwiseConv2D):
@@ -19,6 +19,16 @@ class TeachableModel:
                 super().__init__(*args, **kwargs)
         
         try:
+            print(f"กำลังโหลดโมเดลจาก: {model_path}")
+            print(f"กำลังโหลดป้ายกำกับจาก: {labels_path}")
+            
+            # ตรวจสอบว่าไฟล์มีอยู่
+            if not os.path.exists(model_path):
+                return False, f"ไม่พบไฟล์โมเดล: {model_path}"
+                
+            if not os.path.exists(labels_path):
+                return False, f"ไม่พบไฟล์ป้ายกำกับ: {labels_path}"
+            
             # โหลดโมเดล
             self.model = load_model(
                 model_path,

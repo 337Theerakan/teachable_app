@@ -70,7 +70,8 @@
                     });
                     
                     if (!response.ok) {
-                        throw new Error(await response.text());
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'เกิดข้อผิดพลาดในการทำนาย');
                     }
                     
                     const data = await response.json();
@@ -84,10 +85,19 @@
             
             // แสดงผลลัพธ์
             function displayResults(results) {
+                // แยกหมายเลขคลาสออก (ถ้ามี)
+                const formatClassName = (name) => {
+                    const parts = name.split(' ');
+                    return parts.length > 1 ? parts.slice(1).join(' ') : name;
+                };
+                
+                const topClass = formatClassName(results.top_class);
+                const confidencePercent = (results.confidence * 100).toFixed(2);
+                
                 let html = `
                     <div class="top-result">
-                        <strong>ผลลัพธ์สูงสุด:</strong> ${results.top_class.split(' ', 1)[1]}
-                        <div class="confidence">ความมั่นใจ: ${(results.confidence * 100).toFixed(2)}%</div>
+                        <strong>ผลลัพธ์สูงสุด:</strong> ${topClass}
+                        <div class="confidence">ความมั่นใจ: ${confidencePercent}%</div>
                     </div>
                     
                     <div class="top-results">
@@ -96,7 +106,7 @@
                 `;
                 
                 results.top_results.forEach(item => {
-                    const className = item.class.split(' ', 1)[1];
+                    const className = formatClassName(item.class);
                     const confidence = (item.confidence * 100).toFixed(2);
                     html += `
                         <li>
