@@ -222,6 +222,5 @@ def main():
         else:
             st.info("กรุณาอัปโหลดโมเดล, ป้ายกำกับ และภาพเพื่อเริ่มการจำแนก")
 
-# รันแอปพลิเคชัน
 if __name__ == "__main__":
-    main()pip install -r requirements.txt
+    main()
