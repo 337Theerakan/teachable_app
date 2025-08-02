@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teachable Machine App</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Teachable Machine Classifier</h1>
+        
+        <div class="upload-container">
+            <input type="file" id="image-upload" accept="image/*">
+            <button id="predict-btn">ทำนายภาพ</button>
+        </div>
+        
+        <div id="image-preview"></div>
+        
+        <div class="results">
+            <h2>ผลลัพธ์:</h2>
+            <div id="prediction-result"></div>
+        </div>
+        
+        <div class="loading" id="loading" style="display: none;">
+            กำลังประมวลผล...
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const uploadInput = document.getElementById('image-upload');
+            const predictBtn = document.getElementById('predict-btn');
+            const imagePreview = document.getElementById('image-preview');
+            const resultContainer = document.getElementById('prediction-result');
+            const loadingIndicator = document.getElementById('loading');
+            
+            let uploadedImage = null;
+            
+            // จัดการการอัปโหลดภาพ
+            uploadInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        uploadedImage = event.target.result;
+                        imagePreview.innerHTML = `<img src="${uploadedImage}" alt="ภาพที่อัปโหลด">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // ทำนายภาพ
+            predictBtn.addEventListener('click', async () => {
+                if (!uploadInput.files || !uploadInput.files[0]) {
+                    alert('กรุณาเลือกภาพก่อน');
+                    return;
+                }
+                
+                try {
+                    loadingIndicator.style.display = 'block';
+                    resultContainer.innerHTML = '';
+                    
+                    const formData = new FormData();
+                    formData.append('file', uploadInput.files[0]);
+                    
+                    const response = await fetch('/api/predict', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(await response.text());
+                    }
+                    
+                    const data = await response.json();
+                    displayResults(data.result);
+                } catch (error) {
+                    resultContainer.innerHTML = `<div class="error">${error.message || 'เกิดข้อผิดพลาด'}</div>`;
+                } finally {
+                    loadingIndicator.style.display = 'none';
+                }
+            });
+            
+            // แสดงผลลัพธ์
+            function displayResults(results) {
+                let html = `
+                    <div class="top-result">
+                        <strong>ผลลัพธ์สูงสุด:</strong> ${results.top_class.split(' ', 1)[1]}
+                        <div class="confidence">ความมั่นใจ: ${(results.confidence * 100).toFixed(2)}%</div>
+                    </div>
+                    
+                    <div class="top-results">
+                        <h3>3 อันดับแรก:</h3>
+                        <ul>
+                `;
+                
+                results.top_results.forEach(item => {
+                    const className = item.class.split(' ', 1)[1];
+                    const confidence = (item.confidence * 100).toFixed(2);
+                    html += `
+                        <li>
+                            <span class="class-name">${className}</span>
+                            <span class="confidence-bar-container">
+                                <span class="confidence-bar" style="width: ${confidence}%"></span>
+                            </span>
+                            <span class="confidence-value">${confidence}%</span>
+                        </li>
+                    `;
+                });
+                
+                html += `
+                        </ul>
+                    </div>
+                `;
+                
+                resultContainer.innerHTML = html;
+            }
+        });
+    </script>
+</body>
+</html>
